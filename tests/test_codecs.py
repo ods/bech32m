@@ -1,5 +1,5 @@
-#!/usr/bin/python3
-
+# License for original (reference) implementation:
+#
 # Copyright (c) 2017 Pieter Wuille
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -58,15 +58,15 @@ VALID_BECH32M = [
 
 INVALID_BECH32 = [
     " 1nwldj5",  # HRP character out of range
-    "\x7F" + "1axkwrx",  # HRP character out of range
-    "\x80" + "1eym55h",  # HRP character out of range
+    "\x7F1axkwrx",  # HRP character out of range
+    "\x801eym55h",  # HRP character out of range
     # overall max length exceeded
     "an84characterslonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1569pvx",
     "pzry9x0s0muk",  # No separator character
     "1pzry9x0s0muk",  # Empty HRP
     "x1b4n0q5v",  # Invalid data character
     "li1dgmt3",  # Too short checksum
-    "de1lg7wt" + "\xFF",  # Invalid character in checksum
+    "de1lg7wt\xFF",  # Invalid character in checksum
     "A1G7SGD8",  # checksum calculated with uppercase form of HRP
     "10a06t8",  # empty HRP
     "1qzzfhee",  # empty HRP
@@ -74,8 +74,8 @@ INVALID_BECH32 = [
 
 INVALID_BECH32M = [
     " 1xj0phk",  # HRP character out of range
-    "\x7F" + "1g6xzxy",  # HRP character out of range
-    "\x80" + "1vctc34",  # HRP character out of range
+    "\x7F1g6xzxy",  # HRP character out of range
+    "\x801vctc34",  # HRP character out of range
     # overall max length exceeded
     "an84characterslonghumanreadablepartthatcontainsthetheexcludedcharactersbioandnumber11d6pts4",
     "qyrz8wqd2c9m",  # No separator character
@@ -168,29 +168,30 @@ def test_valid_checksum(spec, test):
     hrp, _, dspec = bech32_decode(test)
     assert hrp is not None
     assert dspec == spec
+
     pos = test.rfind("1")
     test = test[: pos + 1] + chr(ord(test[pos + 1]) ^ 1) + test[pos + 2 :]
-    hrp, _, dspec = bech32_decode(test)
-    assert hrp is None
+    with pytest.raises(bech32m.DecodeError):
+        bech32_decode(test)
 
 
 @pytest.mark.parametrize(
-    "spec, test",
-    [(Encoding.BECH32, test) for test in INVALID_BECH32]
-    + [(Encoding.BECH32M, test) for test in INVALID_BECH32M],
+    "test",
+    INVALID_BECH32 + INVALID_BECH32M,
 )
-def test_invalid_checksum(spec, test):
+def test_invalid_checksum(test):
     """Test validation of invalid checksums."""
-    hrp, _, dspec = bech32_decode(test)
-    assert hrp is None or dspec != spec
+    with pytest.raises(bech32m.DecodeError):
+        bech32_decode(test)
 
 
 @pytest.mark.parametrize("address, hexscript", VALID_ADDRESS)
 def test_valid_address(address, hexscript):
     """Test whether valid addresses decode to the correct output."""
     hrp = "bc"
-    witver, witprog = bech32m.decode(hrp, address)
-    if witver is None:
+    try:
+        witver, witprog = bech32m.decode(hrp, address)
+    except bech32m.HrpDoesNotMatch:
         hrp = "tb"
         witver, witprog = bech32m.decode(hrp, address)
     assert witver is not None, address
@@ -203,14 +204,14 @@ def test_valid_address(address, hexscript):
 @pytest.mark.parametrize("test", INVALID_ADDRESS)
 def test_invalid_address(test):
     """Test whether invalid addresses fail to decode."""
-    witver, _ = bech32m.decode("bc", test)
-    assert witver is None
-    witver, _ = bech32m.decode("tb", test)
-    assert witver is None
+    with pytest.raises(bech32m.codecs.DecodeError):
+        bech32m.decode("bc", test)
+    with pytest.raises(bech32m.codecs.DecodeError):
+        bech32m.decode("tb", test)
 
 
 @pytest.mark.parametrize("hrp, version, length", INVALID_ADDRESS_ENC)
 def test_invalid_address_enc(hrp, version, length):
     """Test whether address encoding fails on invalid input."""
-    code = bech32m.encode(hrp, version, [0] * length)
-    assert code is None
+    with pytest.raises(bech32m.DecodeError):
+        bech32m.encode(hrp, version, [0] * length)

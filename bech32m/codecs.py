@@ -1,3 +1,5 @@
+# License for original (reference) implementation:
+#
 # Copyright (c) 2017, 2020 Pieter Wuille
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -35,6 +37,14 @@ CHARSET = "qpzry9x8gf2tvdw0s3jn54khce6mua7l"
 BECH32M_CONST = 0x2BC830A3
 
 
+class DecodeError(ValueError):
+    pass
+
+
+class HrpDoesNotMatch(DecodeError):
+    pass
+
+
 def bech32_polymod(values):
     """Internal function that computes the Bech32 checksum."""
     generator = [0x3B6A57B2, 0x26508E6D, 0x1EA119FA, 0x3D4233DD, 0x2A1462B3]
@@ -59,7 +69,8 @@ def bech32_verify_checksum(hrp, data):
         return Encoding.BECH32
     if const == BECH32M_CONST:
         return Encoding.BECH32M
-    return None
+    # Invalid checksum
+    raise DecodeError()
 
 
 def bech32_create_checksum(hrp, data, spec):
@@ -81,18 +92,19 @@ def bech32_decode(bech):
     if (any(ord(x) < 33 or ord(x) > 126 for x in bech)) or (
         bech.lower() != bech and bech.upper() != bech
     ):
-        return (None, None, None)
+        # HRP character out of range
+        raise DecodeError()
     bech = bech.lower()
     pos = bech.rfind("1")
     if pos < 1 or pos + 7 > len(bech) or len(bech) > 90:
-        return (None, None, None)
+        # No separator character / Empty HRP / overall max length exceeded
+        raise DecodeError()
     if not all(x in CHARSET for x in bech[pos + 1 :]):
-        return (None, None, None)
+        # Invalid data character
+        raise DecodeError()
     hrp = bech[:pos]
     data = [CHARSET.find(x) for x in bech[pos + 1 :]]
     spec = bech32_verify_checksum(hrp, data)
-    if spec is None:
-        return (None, None, None)
     return (hrp, data[:-6], spec)
 
 
@@ -105,7 +117,8 @@ def convertbits(data, frombits, tobits, pad=True):
     max_acc = (1 << (frombits + tobits - 1)) - 1
     for value in data:
         if value < 0 or (value >> frombits):
-            return None
+            # XXX Not covered by tests
+            raise DecodeError()
         acc = ((acc << frombits) | value) & max_acc
         bits += frombits
         while bits >= tobits:
@@ -115,7 +128,8 @@ def convertbits(data, frombits, tobits, pad=True):
         if bits:
             ret.append((acc << (tobits - bits)) & maxv)
     elif bits >= frombits or ((acc << (tobits - bits)) & maxv):
-        return None
+        # More than 4 padding bits / Non-zero padding in 8-to-5 conversion
+        raise DecodeError()
     return ret
 
 
@@ -123,16 +137,21 @@ def decode(hrp, addr):
     """Decode a segwit address."""
     hrpgot, data, spec = bech32_decode(addr)
     if hrpgot != hrp:
+        raise HrpDoesNotMatch()
         return (None, None)
     decoded = convertbits(data[1:], 5, 8, False)
     if decoded is None or len(decoded) < 2 or len(decoded) > 40:
-        return (None, None)
+        # Invalid program length
+        raise DecodeError()
     if data[0] > 16:
-        return (None, None)
+        # Invalid witness version
+        raise DecodeError()
     if data[0] == 0 and len(decoded) != 20 and len(decoded) != 32:
-        return (None, None)
+        # Invalid program length for witness version 0 (per BIP141)
+        raise DecodeError()
     if data[0] == 0 and spec != Encoding.BECH32 or data[0] != 0 and spec != Encoding.BECH32M:
-        return (None, None)
+        # Invalid checksum algorithm
+        raise DecodeError()
     return (data[0], decoded)
 
 
