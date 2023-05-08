@@ -24,7 +24,8 @@
 """Reference tests for segwit adresses"""
 
 import binascii
-import unittest
+
+import pytest
 
 import bech32m
 from bech32m.codecs import Encoding, bech32_decode
@@ -157,58 +158,59 @@ INVALID_ADDRESS_ENC = [
 ]
 
 
-class TestSegwitAddress(unittest.TestCase):
-    """Unit test class for segwit addressess."""
-
-    def test_valid_checksum(self):
-        """Test checksum creation and validation."""
-        for spec in Encoding:
-            tests = VALID_BECH32 if spec == Encoding.BECH32 else VALID_BECH32M
-            for test in tests:
-                hrp, _, dspec = bech32_decode(test)
-                assert hrp is not None
-                assert dspec == spec
-                pos = test.rfind("1")
-                test = test[: pos + 1] + chr(ord(test[pos + 1]) ^ 1) + test[pos + 2 :]
-                hrp, _, dspec = bech32_decode(test)
-                assert hrp is None
-
-    def test_invalid_checksum(self):
-        """Test validation of invalid checksums."""
-        for spec in Encoding:
-            tests = INVALID_BECH32 if spec == Encoding.BECH32 else INVALID_BECH32M
-            for test in tests:
-                hrp, _, dspec = bech32_decode(test)
-                assert hrp is None or dspec != spec
-
-    def test_valid_address(self):
-        """Test whether valid addresses decode to the correct output."""
-        for address, hexscript in VALID_ADDRESS:
-            hrp = "bc"
-            witver, witprog = bech32m.decode(hrp, address)
-            if witver is None:
-                hrp = "tb"
-                witver, witprog = bech32m.decode(hrp, address)
-            assert witver is not None, address
-            scriptpubkey = segwit_scriptpubkey(witver, witprog)
-            assert scriptpubkey == binascii.unhexlify(hexscript)
-            addr = bech32m.encode(hrp, witver, witprog)
-            assert address.lower() == addr
-
-    def test_invalid_address(self):
-        """Test whether invalid addresses fail to decode."""
-        for test in INVALID_ADDRESS:
-            witver, _ = bech32m.decode("bc", test)
-            assert witver is None
-            witver, _ = bech32m.decode("tb", test)
-            assert witver is None
-
-    def test_invalid_address_enc(self):
-        """Test whether address encoding fails on invalid input."""
-        for hrp, version, length in INVALID_ADDRESS_ENC:
-            code = bech32m.encode(hrp, version, [0] * length)
-            assert code is None
+@pytest.mark.parametrize(
+    "spec, test",
+    [(Encoding.BECH32, test) for test in VALID_BECH32]
+    + [(Encoding.BECH32M, test) for test in VALID_BECH32M],
+)
+def test_valid_checksum(spec, test):
+    """Test checksum creation and validation."""
+    hrp, _, dspec = bech32_decode(test)
+    assert hrp is not None
+    assert dspec == spec
+    pos = test.rfind("1")
+    test = test[: pos + 1] + chr(ord(test[pos + 1]) ^ 1) + test[pos + 2 :]
+    hrp, _, dspec = bech32_decode(test)
+    assert hrp is None
 
 
-if __name__ == "__main__":
-    unittest.main()
+@pytest.mark.parametrize(
+    "spec, test",
+    [(Encoding.BECH32, test) for test in INVALID_BECH32]
+    + [(Encoding.BECH32M, test) for test in INVALID_BECH32M],
+)
+def test_invalid_checksum(spec, test):
+    """Test validation of invalid checksums."""
+    hrp, _, dspec = bech32_decode(test)
+    assert hrp is None or dspec != spec
+
+
+@pytest.mark.parametrize("address, hexscript", VALID_ADDRESS)
+def test_valid_address(address, hexscript):
+    """Test whether valid addresses decode to the correct output."""
+    hrp = "bc"
+    witver, witprog = bech32m.decode(hrp, address)
+    if witver is None:
+        hrp = "tb"
+        witver, witprog = bech32m.decode(hrp, address)
+    assert witver is not None, address
+    scriptpubkey = segwit_scriptpubkey(witver, witprog)
+    assert scriptpubkey == binascii.unhexlify(hexscript)
+    addr = bech32m.encode(hrp, witver, witprog)
+    assert address.lower() == addr
+
+
+@pytest.mark.parametrize("test", INVALID_ADDRESS)
+def test_invalid_address(test):
+    """Test whether invalid addresses fail to decode."""
+    witver, _ = bech32m.decode("bc", test)
+    assert witver is None
+    witver, _ = bech32m.decode("tb", test)
+    assert witver is None
+
+
+@pytest.mark.parametrize("hrp, version, length", INVALID_ADDRESS_ENC)
+def test_invalid_address_enc(hrp, version, length):
+    """Test whether address encoding fails on invalid input."""
+    code = bech32m.encode(hrp, version, [0] * length)
+    assert code is None
