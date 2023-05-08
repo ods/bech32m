@@ -31,11 +31,11 @@ dependencies = [
     "coverage[toml]>=6.5",
     "mypy>=1.0.0",
     "pytest",
+    "pytest-cov",
     "ruff>=0.0.243",
 ]
 [tool.hatch.envs.default.scripts]
-test = "pytest {args:tests}"
-cov = "coverage report"
+test = "pytest {args:--cov tests}"
 typing = "mypy {args:bech32m tests}"
 check = [
     "ruff {args:.}",
@@ -109,6 +109,7 @@ source_pkgs = ["bech32m", "tests"]
 branch = true
 
 [tool.coverage.report]
+show_missing = true
 exclude_lines = [
     "no cov",
     "if __name__ == .__main__.:",
