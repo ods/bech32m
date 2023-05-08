@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling"]
+requires = ["hatchling", "hatch-vcs"]
 build-backend = "hatchling.build"
 
 [project]
@@ -7,151 +7,107 @@ name = "bech32m"
 dynamic = ["version"]
 description = 'Encoding/decoding Bech32 and Bech32m'
 readme = "README.md"
-requires-python = ">=3.7"
+requires-python = ">=3.9"
 license = "MIT"
-keywords = []
+keywords = ["bech32", "bech32m", "bitcoin", "blockchain"]
 authors = [
-  { name = "Denis Otkidach", email = "denis.otkidach@gmail.com" },
+    { name = "Denis Otkidach", email = "denis.otkidach@gmail.com" },
 ]
 classifiers = [
-  "Development Status :: 4 - Beta",
-  "Programming Language :: Python",
-  "Programming Language :: Python :: 3.7",
-  "Programming Language :: Python :: 3.8",
-  "Programming Language :: Python :: 3.9",
-  "Programming Language :: Python :: 3.10",
-  "Programming Language :: Python :: 3.11",
-  "Programming Language :: Python :: Implementation :: CPython",
-  "Programming Language :: Python :: Implementation :: PyPy",
+    "Development Status :: 4 - Beta",
+    "Programming Language :: Python",
 ]
 dependencies = []
 
 [project.urls]
-Documentation = "https://github.com/unknown/bech32m#readme"
-Issues = "https://github.com/unknown/bech32m/issues"
-Source = "https://github.com/unknown/bech32m"
+Source = "https://github.com/ods/bech32m"
 
 [tool.hatch.version]
-path = "bech32m/__about__.py"
+source = "vcs"
 
 [tool.hatch.envs.default]
 dependencies = [
-  "coverage[toml]>=6.5",
-  "pytest",
+    "black>=23.1.0",
+    "coverage[toml]>=6.5",
+    "mypy>=1.0.0",
+    "pytest",
+    "ruff>=0.0.243",
 ]
 [tool.hatch.envs.default.scripts]
 test = "pytest {args:tests}"
-test-cov = "coverage run -m pytest {args:tests}"
-cov-report = [
-  "- coverage combine",
-  "coverage report",
+cov = "coverage report"
+typing = "mypy {args:bech32m tests}"
+check = [
+    "ruff {args:.}",
+    "black --check --diff {args:.}",
+    "typing",
 ]
-cov = [
-  "test-cov",
-  "cov-report",
+fmt = [
+    "black {args:.}",
+    "ruff --fix {args:.}",
 ]
 
 [[tool.hatch.envs.all.matrix]]
-python = ["3.7", "3.8", "3.9", "3.10", "3.11"]
-
-[tool.hatch.envs.lint]
-detached = true
-dependencies = [
-  "black>=23.1.0",
-  "mypy>=1.0.0",
-  "ruff>=0.0.243",
-]
-[tool.hatch.envs.lint.scripts]
-typing = "mypy --install-types --non-interactive {args:bech32m tests}"
-style = [
-  "ruff {args:.}",
-  "black --check --diff {args:.}",
-]
-fmt = [
-  "black {args:.}",
-  "ruff --fix {args:.}",
-  "style",
-]
-all = [
-  "style",
-  "typing",
-]
+python = ["3.9", "3.10", "3.11"]
 
 [tool.black]
-target-version = ["py37"]
-line-length = 120
-skip-string-normalization = true
+target-version = ["py39"]
+line-length = 100
 
 [tool.ruff]
-target-version = "py37"
-line-length = 120
+target-version = "py39"
+line-length = 100
+
+# For the reference, check https://beta.ruff.rs/docs/rules/
 select = [
-  "A",
-  "ARG",
-  "B",
-  "C",
-  "DTZ",
-  "E",
-  "EM",
-  "F",
-  "FBT",
-  "I",
-  "ICN",
-  "ISC",
-  "N",
-  "PLC",
-  "PLE",
-  "PLR",
-  "PLW",
-  "Q",
-  "RUF",
-  "S",
-  "T",
-  "TID",
-  "UP",
-  "W",
-  "YTT",
-]
-ignore = [
-  # Allow non-abstract empty methods in abstract base classes
-  "B027",
-  # Allow boolean positional values in function calls, like `dict.get(... True)`
-  "FBT003",
-  # Ignore checks for possible passwords
-  "S105", "S106", "S107",
-  # Ignore complexity
-  "C901", "PLR0911", "PLR0912", "PLR0913", "PLR0915",
-]
-unfixable = [
-  # Don't touch unused imports
-  "F401",
+    "F",  # pyflakes
+    "E", "W",  # pycodestyle
+    "I",  # isort
+    "UP",  # pyupgrade
+    "YTT",  # flake8-2020
+    "S",  # flake8-bandit
+    "BLE",  # flake8-blind-except
+    "B",  # flake8-bugbear
+    "A001",  # flake8-builtins
+    "C4",  # flake8-comprehensions
+    "DTZ",  # flake8-datetimez
+    "T10",  # flake8-debugger
+    "EXE",  # flake8-executable
+    "ISC",  # flake8-implicit-str-concat
+    "G",  # flake8-logging-format
+    "INP",  # flake8-no-pep420
+    "PIE",  # flake8-pie
+    "T20",  # flake8-print
+    "PT",  # flake8-pytest-style
+    "RET501", "RET502", "RET503",  # flake8-return
+    "SIM",  # flake8-simplify
+    "PTH",  # flake8-use-pathlib
+    "PGH",  # pygrep-hooks
+    "PLC", "PLE",  # Pylint
+    "RUF",  # Ruff-specific
 ]
 
 [tool.ruff.isort]
 known-first-party = ["bech32m"]
 
-[tool.ruff.flake8-tidy-imports]
-ban-relative-imports = "all"
+[tool.ruff.flake8-pytest-style]
+fixture-parentheses = false
+parametrize-names-type = "csv"
 
-[tool.ruff.per-file-ignores]
-# Tests can use magic values, assertions, and relative imports
-"tests/**/*" = ["PLR2004", "S101", "TID252"]
+[tool.pytest.ini_options]
+addopts = ["--strict-config", "--strict-markers"]
+testpaths = ["tests"]
+filterwarnings = [
+    "error",
+]
 
 [tool.coverage.run]
 source_pkgs = ["bech32m", "tests"]
 branch = true
-parallel = true
-omit = [
-  "bech32m/__about__.py",
-]
-
-[tool.coverage.paths]
-bech32m = ["bech32m", "*/bech32m/bech32m"]
-tests = ["tests", "*/bech32m/tests"]
 
 [tool.coverage.report]
 exclude_lines = [
-  "no cov",
-  "if __name__ == .__main__.:",
-  "if TYPE_CHECKING:",
+    "no cov",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
 ]
