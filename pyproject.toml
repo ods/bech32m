@@ -86,6 +86,7 @@ select = [
     "PLC", "PLE",  # Pylint
     "RUF",  # Ruff-specific
 ]
+ignore = ["S101", "ISC003"]  # FIXME
 
 [tool.ruff.isort]
 known-first-party = ["bech32m"]

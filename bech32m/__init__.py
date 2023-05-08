@@ -1,3 +1,3 @@
-from .codecs import encode, decode
+from .codecs import decode, encode
 
 __all__ = ["encode", "decode"]
