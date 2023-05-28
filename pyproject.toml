@@ -26,6 +26,7 @@ Source = "https://github.com/ods/bech32m"
 source = "vcs"
 
 [tool.hatch.envs.default]
+python = "3.9"
 dependencies = [
     "black>=23.1.0",
     "coverage[toml]>=6.5",
