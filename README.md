@@ -1,5 +1,6 @@
 # bech32m
 
+[![CI](https://github.com/ods/bech32m/actions/workflows/ci.yml/badge.svg)](https://github.com/ods/bech32m/actions/workflows/ci.yml)
 [![PyPI - Version](https://img.shields.io/pypi/v/bech32m.svg)](https://pypi.org/project/bech32m)
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/bech32m.svg)](https://pypi.org/project/bech32m)
 
