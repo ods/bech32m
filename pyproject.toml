@@ -101,6 +101,14 @@ known-first-party = ["bech32m"]
 fixture-parentheses = false
 parametrize-names-type = "csv"
 
+[tool.mypy]
+python_version = "3.9"
+check_untyped_defs = true
+disallow_any_generics = true
+disallow_untyped_defs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+
 [tool.pytest.ini_options]
 addopts = ["--strict-config", "--strict-markers"]
 testpaths = ["tests"]
