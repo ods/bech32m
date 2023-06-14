@@ -31,7 +31,7 @@ import bech32m
 from bech32m.codecs import Encoding, bech32_decode
 
 
-def segwit_scriptpubkey(witver: int, witprog: list[int]) -> bytes:
+def segwit_scriptpubkey(witver: int, witprog: bytes) -> bytes:
     """Construct a Segwit scriptPubKey for a given witness program."""
     return bytes([witver + 80 if witver else 0, len(witprog), *witprog])
 
@@ -214,4 +214,4 @@ def test_invalid_address(test: str) -> None:
 def test_invalid_address_enc(hrp: str, version: int, length: int) -> None:
     """Test whether address encoding fails on invalid input."""
     with pytest.raises(bech32m.DecodeError):
-        bech32m.encode(hrp, version, [0] * length)
+        bech32m.encode(hrp, version, bytes(length))
