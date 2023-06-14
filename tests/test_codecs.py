@@ -31,7 +31,7 @@ import bech32m
 from bech32m.codecs import Encoding, bech32_decode
 
 
-def segwit_scriptpubkey(witver, witprog):
+def segwit_scriptpubkey(witver: int, witprog: bytes) -> bytes:
     """Construct a Segwit scriptPubKey for a given witness program."""
     return bytes([witver + 80 if witver else 0, len(witprog), *witprog])
 
@@ -163,7 +163,7 @@ INVALID_ADDRESS_ENC = [
     [(Encoding.BECH32, test) for test in VALID_BECH32]
     + [(Encoding.BECH32M, test) for test in VALID_BECH32M],
 )
-def test_valid_checksum(spec, test):
+def test_valid_checksum(spec: Encoding, test: str) -> None:
     """Test checksum creation and validation."""
     hrp, _, dspec = bech32_decode(test)
     assert hrp is not None
@@ -179,14 +179,14 @@ def test_valid_checksum(spec, test):
     "test",
     INVALID_BECH32 + INVALID_BECH32M,
 )
-def test_invalid_checksum(test):
+def test_invalid_checksum(test: str) -> None:
     """Test validation of invalid checksums."""
     with pytest.raises(bech32m.DecodeError):
         bech32_decode(test)
 
 
 @pytest.mark.parametrize("address, hexscript", VALID_ADDRESS)
-def test_valid_address(address, hexscript):
+def test_valid_address(address: str, hexscript: str) -> None:
     """Test whether valid addresses decode to the correct output."""
     hrp = "bc"
     try:
@@ -202,7 +202,7 @@ def test_valid_address(address, hexscript):
 
 
 @pytest.mark.parametrize("test", INVALID_ADDRESS)
-def test_invalid_address(test):
+def test_invalid_address(test: str) -> None:
     """Test whether invalid addresses fail to decode."""
     with pytest.raises(bech32m.codecs.DecodeError):
         bech32m.decode("bc", test)
@@ -211,7 +211,7 @@ def test_invalid_address(test):
 
 
 @pytest.mark.parametrize("hrp, version, length", INVALID_ADDRESS_ENC)
-def test_invalid_address_enc(hrp, version, length):
+def test_invalid_address_enc(hrp: str, version: int, length: int) -> None:
     """Test whether address encoding fails on invalid input."""
     with pytest.raises(bech32m.DecodeError):
-        bech32m.encode(hrp, version, [0] * length)
+        bech32m.encode(hrp, version, bytes(length))
