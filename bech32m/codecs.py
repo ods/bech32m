@@ -25,6 +25,7 @@
 
 from collections.abc import ByteString
 from enum import Enum
+from typing import NamedTuple
 
 
 class Encoding(Enum):
@@ -44,6 +45,11 @@ class DecodeError(ValueError):
 
 class HrpDoesNotMatch(DecodeError):
     pass
+
+
+class DecodedAddress(NamedTuple):
+    witver: int
+    witprog: bytes
 
 
 def bech32_polymod(values: ByteString) -> int:
@@ -134,27 +140,26 @@ def convertbits(data: ByteString, frombits: int, tobits: int, pad: bool = True) 
     return ret
 
 
-def decode(hrp: str, addr: str) -> tuple[int, bytes]:
+def decode(hrp: str, addr: str) -> DecodedAddress:
     """Decode a segwit address."""
     hrpgot, data, spec = bech32_decode(addr)
     if hrpgot != hrp:
         raise HrpDoesNotMatch()
-        return (None, None)
-    decoded = convertbits(data[1:], 5, 8, False)
-    if decoded is None or len(decoded) < 2 or len(decoded) > 40:
+    witprog = convertbits(data[1:], 5, 8, False)
+    if len(witprog) < 2 or len(witprog) > 40:
         # Invalid program length
         raise DecodeError()
     witver = data[0]
     if witver > 16:
         # Invalid witness version
         raise DecodeError()
-    if witver == 0 and len(decoded) != 20 and len(decoded) != 32:
+    if witver == 0 and len(witprog) != 20 and len(witprog) != 32:
         # Invalid program length for witness version 0 (per BIP141)
         raise DecodeError()
     if witver == 0 and spec != Encoding.BECH32 or witver != 0 and spec != Encoding.BECH32M:
         # Invalid checksum algorithm
         raise DecodeError()
-    return (witver, decoded)
+    return DecodedAddress(witver, witprog)
 
 
 def encode(hrp: str, witver: int, witprog: ByteString) -> str:
